@@ -1,17 +1,17 @@
-require "rails/generators"
-require "generators/diffit/helpers"
+require 'rails/generators/named_base'
+require 'rails/generators/migration'
+require 'generators/diffit/helpers'
 
 module Diffit
   module Generators
-    class InitGenerator < Rails::Generators::Base
+    class TableGenerator < Rails::Generators::NamedBase
+      include Rails::Generators::Migration
       include Diffit::Generators::Helpers
 
-      source_root File.expand_path("../templates", __FILE__)
+      source_root File.expand_path("../templates/migration", __FILE__)
 
-      argument :table_name, type: :string, default: "diffits"
-
-      def copy_initializer_file
-        template "initializer.rb", config_path
+      def copy_migration_files
+        migration_template "diffit.rb", add_migration_path
       end
     end
   end

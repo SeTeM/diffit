@@ -1,10 +1,30 @@
 module Diffit
   module Generators
     module Helpers
-      private
+      def self.included(base)
+        base.extend(ClassMethods)
+      end
 
       def config_path
         "config/initializers/diffit.rb"
+      end
+
+      def diffit_table_name
+        Rails.application.config.diffit.table_name
+      end
+
+      def create_migration_path
+        "db/migrate/create_#{table_name}.rb"
+      end
+
+      def add_migration_path
+        "db/migrate/add_diff_trigger_and_func_to_#{table_name}.rb"
+      end
+
+      module ClassMethods
+        def next_migration_number(path)
+          @migration_number = Time.now.utc.strftime("%Y%m%d%H%M%S").to_i.to_s
+        end
       end
     end
   end
