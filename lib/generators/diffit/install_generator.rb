@@ -17,7 +17,7 @@ module Diffit
       end
 
       def copy_migration_files
-        migration_template "migration/diffit.rb", create_migration_path
+        migration_template "migration/install.rb", install_migration_path
       end
     end
   end

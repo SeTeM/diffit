@@ -11,7 +11,7 @@ module Diffit
       source_root File.expand_path("../templates/migration", __FILE__)
 
       def copy_migration_files
-        migration_template "diffit.rb", add_migration_path
+        migration_template "create_trigger.rb", create_trigger_path
       end
     end
   end
