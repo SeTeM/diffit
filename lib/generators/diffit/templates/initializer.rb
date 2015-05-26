@@ -1,3 +1,3 @@
-Rails.application.config.diffit.configure do |config|
+Diffit.setup do |config|
   config.table_name = "<%= table_name %>"
 end
