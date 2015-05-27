@@ -3,8 +3,9 @@ class Create<%= class_name %> < ActiveRecord::Migration
     create_table :<%= table_name %> do |t|
       t.string :table_name, null: false
       t.integer :record_id, null: false
-      t.string :column_name, null: false
       t.datetime :changed_at, null: false
+      t.string :column_name, null: false
+      t.text :value
     end
 
     add_index :<%= table_name %>, :changed_at
@@ -25,9 +26,8 @@ class Create<%= class_name %> < ActiveRecord::Migration
           isValueModified BOOLEAN;
           changedAt TIMESTAMP;
       BEGIN
-          changedAt := current_timestamp;
-
           IF (TG_OP = 'INSERT') OR (TG_OP = 'UPDATE') THEN
+              changedAt := current_timestamp;
 
               FOR ri IN
                   -- Fetch a ResultSet listing columns defined for this trigger's table.
@@ -51,17 +51,17 @@ class Create<%= class_name %> < ActiveRecord::Migration
                   isColumnSignificant := ri.column_name NOT IN ('id', 'created_at', 'updated_at');
                   IF isColumnSignificant THEN
                       isValueModified := oldValue <> newValue;
-                      IF isValueModified THEN
-                          INSERT INTO <%= table_name %> ( table_name, record_id, column_name, changed_at)
-                          VALUES ( TG_TABLE_NAME, NEW.id, ri.column_name::VARCHAR, changedAt );
+                      IF isValueModified OR isValueModified IS NULL THEN
+                          INSERT INTO diffits ( table_name, record_id, column_name, value, changed_at )
+                          VALUES ( TG_TABLE_NAME, NEW.id, ri.column_name::VARCHAR, newValue, changedAt );
                       END IF;
                   END IF;
               END LOOP;
 
               RETURN NEW;
           ELSIF (TG_OP = 'DELETE') THEN
-              INSERT INTO <%= table_name %> ( table_name, record_id, column_name, changed_at)
-              VALUES ( TG_TABLE_NAME, NEW.id, ri.column_name::VARCHAR, changedAt );
+              INSERT INTO diffits ( table_name, record_id, column_name, value, changed_at)
+              VALUES ( TG_TABLE_NAME, NEW.id, ri.column_name::VARCHAR, ''::TEXT, changedAt );
               RETURN OLD;
           END IF;
       END;
@@ -80,7 +80,7 @@ class Create<%= class_name %> < ActiveRecord::Migration
             column_name = NEW.column_name )
       DO INSTEAD
         UPDATE <%= table_name %>
-        SET changed_at = NEW.changed_at
+        SET changed_at = NEW.changed_at, value = NEW.value
         WHERE
           table_name = NEW.table_name AND
           record_id = NEW.record_id AND
