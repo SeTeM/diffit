@@ -8,3 +8,4 @@
 /spec/reports/
 /tmp/
 debug.log
+spec/internal/config/database.yml.sample

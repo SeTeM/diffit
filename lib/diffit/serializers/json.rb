@@ -1,3 +1,5 @@
+require 'diffit/serializers/base'
+
 module Diffit
   module Serializers
     class Json < Base
@@ -11,18 +13,25 @@ module Diffit
       private
 
       def changes
-        changes = []
+        result = []
 
         iterate do |object|
-          changes << serialize(object)
+          result << serialize(object)
         end
 
-        changes.as_json
+        result.as_json
       end
 
       def serialize(object)
-        changed_columns = object.values.select { |k, v| v > timestamp }.keys
+        {
+          model: model_for_table(object.table_name).name,
+          record_id: object.record_id,
+          values: values_for(object)
+        }
+      end
 
+      def values_for(object)
+        changed_columns = object.values.select { |k, v| v > timestamp }.keys
         changed_columns.inject({}) do |result, column|
           result[column] = object.send("#{object.table_name}_#{column}")
           result

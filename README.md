@@ -1,39 +1,92 @@
 # Diffit
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/diffit`. To experiment with that code, run `bin/console` for an interactive prompt.
+## Зачем он нужен?
 
-TODO: Delete this and the text above, and describe your gem
+Для нескольких типов задач необходимо иметь возможность получать последние изменения определенных данных.
+Например при реализации offline-first концепции нужно реплицировать данные между сервером и клиентом:
+есть несколько клиентов, они постоянно опрашивают/подключены через веб-сокет сервер
+на предмет изменений. Чтобы не слать каждый раз целиком все данные, нужно иметь возможность
+получить все изменения с последнего таймстемпа актуального для клиента. То есть:
 
-## Installation
+1. Клиент запросил индекс, получил список данных и таймстемп когда он их получил
+2. Клиент опрашивает - не изменилось ли чего на сервере
+3. Сервер проверяет все изменения по заданному скопу начиная с запрашиваемого клиентом таймстемпа
+4. Если что-то изменилось - он отсылает клиенту только те поля записей, которые изменились в формате json.
 
-Add this line to your application's Gemfile:
+## Что он делает?
 
-```ruby
-gem 'diffit'
+Diffit позволяет отслеживать такие изменения и генерирует из них ответ, содержащий только изменившиеся поля:
+В настоящее время поддерживается только `json`:
+
+```json
+{
+  "timestamp": "2015-05-27 21:31:45 +0300",
+  "changes":
+    [
+      {
+        "model": "ModelName",
+        "record_id": 12,
+        "values": {
+          "column_name1": "new value",
+          "column_name2": "facebook",
+        },
+      },
+      {...}
+    ]
+}
 ```
 
-And then execute:
+## Как настроить?
 
-    $ bundle
+1) Добавть гем в `Gemfile`:
 
-Or install it yourself as:
+  ```ruby
+  gem 'diffit'
+  ```
 
-    $ gem install diffit
+2) Создать миграцию для внутренних нужд Diffit (инициалайзер, таблица, функция в БД, индексы, правила):
 
-## Usage
+  ```
+  rails generate diffit:install <имя таблицы, default: "diffit">
+  ```
 
-TODO: Write usage instructions here
+  Инициалайзер `config/initializers/diffit.rb`:
 
-## Development
+  ```ruby
+  Diffit.setup do |config|
+    config.table_name = "diffits" # название таблицы с дифами
+    config.serializer = :json # сериалайзер ответа
+    config.timestamp_format = ->(timestamp) { timestamp.to_s } # формат возвращаемого таймстемпа
+  end
+  ```
 
-After checking out the repo, run `bin/setup` to install dependencies. Then, run `bin/console` for an interactive prompt that will allow you to experiment. 
+3) Создаст миграцию с триггером на таблицу, которую хотим отслеживать:
 
-To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release` to create a git tag for the version, push git commits and tags, and push the `.gem` file to [rubygems.org](https://rubygems.org).
+  ```
+  rails generate diffit:table <таблица/модель>
+  ```
 
-## Contributing
+4) Добавить `diffit!` в отслеживаемую модель:
 
-1. Fork it ( https://github.com/[my-github-username]/diffit/fork )
-2. Create your feature branch (`git checkout -b my-new-feature`)
-3. Commit your changes (`git commit -am 'Add some feature'`)
-4. Push to the branch (`git push origin my-new-feature`)
-5. Create a new Pull Request
+  ```ruby
+  class User < ActiveRecord::Base
+    diffit!
+  end
+  ```
+
+## Как использовать?
+
+```ruby
+User.where(login: 'Vlad').diff_from(1.day.ago)
+# or
+Diffit.diff_from(1.day.ago, resources: [User.all, Post.where(user_id: 1)])
+# or
+User.first.diff_from(1.day.ago)
+```
+
+## Тестирование
+
+```
+rake copy_db_config # создаст конфиг для БД в spec/internal/config/database.yml
+rake
+```

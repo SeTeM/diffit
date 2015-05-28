@@ -1,7 +1,7 @@
 module Diffit
   module Config
     module ClassMethods
-      attr_accessor :table_name, :serializer
+      attr_accessor :table_name, :serializer, :timestamp_format
 
       def setup
         yield self
@@ -12,10 +12,10 @@ module Diffit
       end
     end
 
-    extend ClassMethods
-
     def self.included(base)
       base.extend ClassMethods
     end
   end
+
+  include Config
 end

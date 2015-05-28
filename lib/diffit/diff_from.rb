@@ -11,4 +11,6 @@ module Diffit
       end
     end
   end
+
+  include Diffit::DiffFrom
 end
