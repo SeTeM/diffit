@@ -9,16 +9,12 @@ module Diffit
         "config/initializers/diffit.rb"
       end
 
-      def diffit_table_name
-        Rails.application.config.diffit.table_name
-      end
-
       def install_migration_path
         "db/migrate/create_#{table_name}.rb"
       end
 
       def create_trigger_path
-        "db/migrate/create_diffit_#{plural_table_name}_trigger.rb"
+        "db/migrate/create_diffit_#{table_name}_trigger.rb"
       end
 
       module ClassMethods

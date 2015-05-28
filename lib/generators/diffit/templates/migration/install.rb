@@ -1,4 +1,4 @@
-class Create<%= class_name %> < ActiveRecord::Migration
+class Create<%= table_name.camelcase %> < ActiveRecord::Migration
   def up
     enable_extension "hstore"
 
@@ -47,9 +47,9 @@ class Create<%= class_name %> < ActiveRecord::Migration
               END IF;
 
               -- OLD value
-              IF (TG_OP = 'INSERT') THEN   -- If operation is an INSERT, we have no OLD value, so use an empty string.
+              IF (TG_OP = 'INSERT') THEN
                   oldValue := ''::VARCHAR;
-              ELSE   -- Else operation is an UPDATE, so capture the OLD value.
+              ELSE
                   EXECUTE 'SELECT ($1).' || ri.column_name || '::text' INTO oldValue USING OLD;
               END IF;
 

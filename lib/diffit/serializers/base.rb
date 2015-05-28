@@ -6,7 +6,6 @@ module Diffit
       def initialize(timestamp, objects)
         @timestamp = timestamp
         @objects = objects
-        load_all_models
       end
 
       protected
@@ -31,11 +30,6 @@ module Diffit
 
       def models_by_table
         @models_by_table ||= ActiveRecord::Base.subclasses.index_by(&:table_name)
-      end
-
-      def load_all_models
-        return unless Rails.root
-        Dir[Rails.root.join("app", "models", "**", "*.rb")].each(&method(:require))
       end
     end
   end

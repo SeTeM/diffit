@@ -1,15 +1,13 @@
+require 'diffit/adapters/active_record_adapter/resource'
+
 module Diffit::Adapters
   module ActiveRecordAdapter
     class Query
       attr_reader :timestamp, :resources
 
-      UnexpectedRecord = Class.new(StandardError)
-      CantFindTableName = Class.new(StandardError)
-      CantFindColumns = Class.new(StandardError)
-
       def initialize(timestamp, options={})
         @timestamp = timestamp
-        @resources = options[:resources]
+        @resources = options[:resources].flat_map { |r| Resource.load(r) }
       end
 
       def search
@@ -25,57 +23,15 @@ module Diffit::Adapters
       private
 
       def where_clause
-        resources.map { |r| resource_to_where(r) }.join(' OR ')
-      end
-
-      def resource_to_where(resource)
-        resource_table_name = table_name_for(resource)
-        if resource.respond_to?(:id)
-          "(#{dif_table_name}.table_name='#{resource_table_name}'" +
-            " AND #{dif_table_name}.record_id = #{resource.id})"
-        elsif resource.ancestors.include?(ActiveRecord::Base)
-          "(#{dif_table_name}.table_name='#{resource_table_name}'" +
-            " AND #{dif_table_name}.record_id in (#{resource.select(:id).to_sql}))"
-        else
-          raise UnexpectedRecord, resource
-        end
+        resources.map(&:to_where).join(' OR ')
       end
 
       def join_clause
-        "INNER JOIN " + resources.map do |resource|
-          resource_table_name = table_name_for(resource)
-          "#{resource_table_name} ON #{dif_table_name}.table_name='#{resource_table_name}'" +
-            " AND #{dif_table_name}.record_id=#{resource_table_name}.id"
-        end.uniq.join(', ')
-      end
-
-      def table_name_for(resource)
-        if resource.respond_to?(:table_name)
-          resource.table_name
-        elsif resource.class.respond_to?(:table_name)
-          resource.class.table_name
-        else
-          raise CantFindTableName, resource
-        end
+        "INNER JOIN " + resources.map(&:to_join).uniq.join(', ')
       end
 
       def select_clause
-        "#{dif_table_name}.*, " + resources.flat_map do |resource|
-          record_to_select(resource)
-        end.uniq.join(', ')
-      end
-
-      def record_to_select(resource)
-        resource_table_name = table_name_for(resource)
-        if resource.respond_to?(:column_names)
-          resource.column_names
-        elsif resource.class.respond_to?(:column_names)
-          resource.class.column_names
-        else
-          raise CantFindColumns, resource
-        end.map do |cn|
-          "#{resource_table_name}.#{cn} AS #{resource_table_name}_#{cn}"
-        end
+        "#{dif_table_name}.*, " + resources.flat_map(&:to_select).uniq.join(', ')
       end
 
       def dif_table_name

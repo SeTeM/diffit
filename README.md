@@ -79,7 +79,7 @@ Diffit позволяет отслеживать такие изменения �
 ```ruby
 User.where(login: 'Vlad').diff_from(1.day.ago)
 # or
-Diffit.diff_from(1.day.ago, resources: [User.all, Post.where(user_id: 1)])
+Diffit.diff_from(1.day.ago, resources: [User.all, Post.where(user_id: 1), Comments.last(10)])
 # or
 User.first.diff_from(1.day.ago)
 ```
@@ -87,6 +87,7 @@ User.first.diff_from(1.day.ago)
 ## Тестирование
 
 ```
+bundle
 rake copy_db_config # создаст конфиг для БД в spec/internal/config/database.yml
 rake
 ```

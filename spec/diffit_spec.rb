@@ -1,6 +1,6 @@
 require 'spec_helper'
 
-describe Diffit do
+RSpec.describe Diffit do
   describe "VERSION" do
     subject { described_class::VERSION }
 
