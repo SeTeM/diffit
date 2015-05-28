@@ -3,13 +3,12 @@ class Create<%= class_name %> < ActiveRecord::Migration
     create_table :<%= table_name %> do |t|
       t.string :table_name, null: false
       t.integer :record_id, null: false
-      t.datetime :changed_at, null: false
-      t.string :column_name, null: false
-      t.text :value
+      t.datetime :last_changed_at, null: false
+      t.hstore :values
     end
 
-    add_index :<%= table_name %>, :changed_at
-    add_index :<%= table_name %>, [:table_name, :record_id, :column_name], unique: true
+    add_index :<%= table_name %>, :last_changed_at
+    add_index :<%= table_name %>, [:table_name, :record_id], unique: true
 
     execute %[
       CREATE OR REPLACE FUNCTION diffit_changes()
@@ -25,44 +24,51 @@ class Create<%= class_name %> < ActiveRecord::Migration
           isColumnSignificant BOOLEAN;
           isValueModified BOOLEAN;
           changedAt TIMESTAMP;
+          valuesHsore HSTORE;
       BEGIN
-          IF (TG_OP = 'INSERT') OR (TG_OP = 'UPDATE') THEN
-              changedAt := current_timestamp;
+          changedAt := current_timestamp;
+          valuesHsore := ''::HSTORE;
 
-              FOR ri IN
-                  -- Fetch a ResultSet listing columns defined for this trigger's table.
-                  SELECT ordinal_position, column_name, data_type
-                  FROM information_schema.columns
-                  WHERE
-                      table_schema = quote_ident(TG_TABLE_SCHEMA)
-                  AND table_name = quote_ident(TG_TABLE_NAME)
-                  ORDER BY ordinal_position
-              LOOP
-                  -- For each column in this trigger's table, copy the OLD & NEW values into respective variables.
-                  -- NEW value
+          FOR ri IN
+              SELECT ordinal_position, column_name, data_type
+              FROM information_schema.columns
+              WHERE
+                  table_schema = quote_ident(TG_TABLE_SCHEMA)
+              AND table_name = quote_ident(TG_TABLE_NAME)
+              ORDER BY ordinal_position
+          LOOP
+              -- NEW value
+              IF (TG_OP = 'DELETE') THEN
+                  newValue := ''::VARCHAR;
+              ELSE
                   EXECUTE 'SELECT ($1).' || ri.column_name || '::text' INTO newValue USING NEW;
-                  -- OLD value
-                  IF (TG_OP = 'INSERT') THEN   -- If operation is an INSERT, we have no OLD value, so use an empty string.
-                      oldValue := ''::varchar;
-                  ELSE   -- Else operation is an UPDATE, so capture the OLD value.
-                      EXECUTE 'SELECT ($1).' || ri.column_name || '::text' INTO oldValue USING OLD;
-                  END IF;
+              END IF;
 
-                  isColumnSignificant := ri.column_name NOT IN ('id', 'created_at', 'updated_at');
-                  IF isColumnSignificant THEN
-                      isValueModified := oldValue <> newValue;
-                      IF isValueModified OR isValueModified IS NULL THEN
-                          INSERT INTO diffits ( table_name, record_id, column_name, value, changed_at )
-                          VALUES ( TG_TABLE_NAME, NEW.id, ri.column_name::VARCHAR, newValue, changedAt );
-                      END IF;
-                  END IF;
-              END LOOP;
+              -- OLD value
+              IF (TG_OP = 'INSERT') THEN   -- If operation is an INSERT, we have no OLD value, so use an empty string.
+                  oldValue := ''::VARCHAR;
+              ELSE   -- Else operation is an UPDATE, so capture the OLD value.
+                  EXECUTE 'SELECT ($1).' || ri.column_name || '::text' INTO oldValue USING OLD;
+              END IF;
 
-              RETURN NEW;
-          ELSIF (TG_OP = 'DELETE') THEN
-              INSERT INTO diffits ( table_name, record_id, column_name, value, changed_at)
-              VALUES ( TG_TABLE_NAME, NEW.id, ri.column_name::VARCHAR, ''::TEXT, changedAt );
-              RETURN OLD;
+              isColumnSignificant := ri.column_name NOT IN ('id', 'created_at', 'updated_at');
+              IF isColumnSignificant THEN
+                  isValueModified := oldValue <> newValue;
+                  IF isValueModified OR isValueModified IS NULL THEN
+                      valuesHsore := valuesHsore || hstore(ri.column_name::VARCHAR, changedAt::TEXT);
+                  END IF;
+              END IF;
+
+              IF valuesHsore <> ''::HSTORE THEN
+                  INSERT INTO diffits ( table_name, record_id, values, last_changed_at )
+                  VALUES ( TG_TABLE_NAME, NEW.id, valuesHsore, changedAt );
+              END IF;
+          END LOOP;
+
+          IF (TG_OP = 'DELETE') THEN
+            RETURN OLD;
+          ELSE
+            RETURN NEW;
           END IF;
       END;
 
@@ -76,15 +82,13 @@ class Create<%= class_name %> < ActiveRecord::Migration
           FROM <%= table_name %>
           WHERE
             table_name = NEW.table_name AND
-            record_id = NEW.record_id AND
-            column_name = NEW.column_name )
+            record_id = NEW.record_id)
       DO INSTEAD
         UPDATE <%= table_name %>
-        SET changed_at = NEW.changed_at, value = NEW.value
+        SET last_changed_at = NEW.last_changed_at, values = values || NEW.values
         WHERE
           table_name = NEW.table_name AND
-          record_id = NEW.record_id AND
-          column_name = NEW.column_name;
+          record_id = NEW.record_id;
     ]
   end
 
