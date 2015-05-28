@@ -18,7 +18,7 @@ module Diffit
       end
 
       def create_trigger_path
-        "db/migrate/create_diffit_#{table_name}_trigger.rb"
+        "db/migrate/create_diffit_#{plural_table_name}_trigger.rb"
       end
 
       module ClassMethods

@@ -1,16 +1,17 @@
 module Diffit
   module Serializers
     class Base
-      attr_reader :objects
+      attr_reader :objects, :timestamp
 
-      def initialize(objects)
+      def initialize(timestamp, objects)
+        @timestamp = timestamp
         @objects = objects
       end
 
       protected
 
       def formatted_time
-        Time.now.to_s
+        timestamp.to_s
       end
 
       def iterate

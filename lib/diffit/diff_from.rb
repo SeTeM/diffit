@@ -7,7 +7,7 @@ module Diffit
     module ClassMethods
       def diff_from(timestamp, options={})
         scope = Diffit::Query.new(timestamp, options).search
-        Diffit.serializer_class.new(scope).dump
+        Diffit.serializer_class.new(timestamp, scope).dump
       end
     end
   end

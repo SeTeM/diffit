@@ -1,4 +1,4 @@
-class CreateDiffit<%= class_name %>Trigger < ActiveRecord::Migration
+class CreateDiffit<%= table_name.camelcase %>Trigger < ActiveRecord::Migration
   def up
     execute %[
       CREATE TRIGGER diffit_<%= table_name %>_trigger

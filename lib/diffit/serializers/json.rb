@@ -17,11 +17,16 @@ module Diffit
           changes << serialize(object)
         end
 
-        changes
+        changes.as_json
       end
 
       def serialize(object)
-        object.to_s
+        changed_columns = object.values.select { |k, v| v > timestamp }.keys
+
+        changed_columns.inject({}) do |result, column|
+          result[column] = object.send("#{object.table_name}_#{column}")
+          result
+        end
       end
     end
   end

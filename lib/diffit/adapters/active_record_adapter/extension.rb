@@ -1,5 +1,5 @@
 module Diffit::Adapters
-  module ActiveRecord
+  module ActiveRecordAdapter
     module Extension
       def diffit!
         extend ClassMethods
@@ -10,7 +10,7 @@ module Diffit::Adapters
 
       module ClassMethods
         def diff_from(timestamp)
-          Diffit.diff_from(timestamp, scopes: [self])
+          Diffit.diff_from(timestamp, records: [self])
         end
       end
 

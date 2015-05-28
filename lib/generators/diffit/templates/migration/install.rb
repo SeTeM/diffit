@@ -1,5 +1,7 @@
 class Create<%= class_name %> < ActiveRecord::Migration
   def up
+    enable_extension "hstore"
+
     create_table :<%= table_name %> do |t|
       t.string :table_name, null: false
       t.integer :record_id, null: false
@@ -53,8 +55,8 @@ class Create<%= class_name %> < ActiveRecord::Migration
 
               isColumnSignificant := ri.column_name NOT IN ('id', 'created_at', 'updated_at');
               IF isColumnSignificant THEN
-                  isValueModified := oldValue <> newValue;
-                  IF isValueModified OR isValueModified IS NULL THEN
+                  isValueModified := (oldValue <> newValue) OR (oldValue IS NOT NULL AND newValue IS NULL) OR (oldValue IS NULL AND newValue IS NOT NULL);
+                  IF isValueModified THEN
                       valuesHsore := valuesHsore || hstore(ri.column_name::VARCHAR, changedAt::TEXT);
                   END IF;
               END IF;
@@ -97,6 +99,8 @@ class Create<%= class_name %> < ActiveRecord::Migration
       DROP RULE insert_or_update_to_<%= table_name %> ON <%= table_name %>;
       DROP FUNCTION diffit_changes;
     ]
+    remove_index :<%= table_name %>, :last_changed_at
+    remove_index :<%= table_name %>, [:table_name, :record_id]
     drop_table :<%= table_name %>
   end
 end
