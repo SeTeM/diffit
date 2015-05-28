@@ -5,22 +5,20 @@ describe Diffit do
     expect(Diffit::VERSION).not_to be nil
   end
 
-  it 'does something useful' do
-    expect(false).to eq(true)
-  end
-
-  describe "#configure" do
+  describe "#setup" do
     before do
-      MegaLotto.configure do |config|
-        config.drawing_count = 10
+      described_class.setup do |config|
+        config.table_name = "diffits"
+        config.serializer = :json
       end
     end
 
-    it "returns an array with 10 elements" do
-      draw = MegaLotto::Drawing.new.draw
+    it "#table_name" do
+      expect(described_class.table_name).to eq("diffits")
+    end
 
-      expect(draw).to be_a(Array)
-      expect(draw.size).to eq(10)
+    it "#serializer_class" do
+      expect(described_class.serializer_class).to eq(Diffit::Serializers::Json)
     end
   end
 end

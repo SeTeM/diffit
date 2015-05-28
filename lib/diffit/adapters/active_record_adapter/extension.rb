@@ -10,13 +10,13 @@ module Diffit::Adapters
 
       module ClassMethods
         def diff_from(timestamp)
-          Diffit.diff_from(timestamp, records: [self])
+          Diffit.diff_from(timestamp, resources: [self])
         end
       end
 
       module InstanceMethods
         def diff_from(timestamp)
-          Diffit.diff_from(timestamp, records: [self])
+          Diffit.diff_from(timestamp, resources: [self])
         end
       end
     end
