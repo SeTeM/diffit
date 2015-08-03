@@ -24,6 +24,11 @@ module Diffit::Adapters
         def column_names
           object.column_names
         end
+
+        def self.applicable?(resource)
+          resource.respond_to?(:ancestors) &&
+            resource.ancestors.include?(ActiveRecord::Base)
+        end
       end
     end
   end

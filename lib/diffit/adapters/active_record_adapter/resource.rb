@@ -1,37 +1,23 @@
 require 'diffit/adapters/active_record_adapter/resource/base'
 require 'diffit/adapters/active_record_adapter/resource/one_model'
 require 'diffit/adapters/active_record_adapter/resource/scope'
+require 'diffit/adapters/active_record_adapter/resource/array_of_models'
 
 module Diffit::Adapters
   module ActiveRecordAdapter
     module Resource
+      RESOURCE_CLASSES = [OneModel, Scope, ArrayOfModels].freeze
+
       UnexpectedResource = Class.new(StandardError)
 
       def self.load(resource)
-        if is_one_model?(resource)
-          OneModel.new(resource)
-        elsif is_scope?(resource)
-          Scope.new(resource)
-        elsif is_array?(resource)
-          resource.map { |r| OneModel.new(r) }
+        klass = RESOURCE_CLASSES.detect { |k| k.applicable?(resource) }
+
+        if klass
+          klass.new(resource)
         else
           raise UnexpectedResource, resource
         end
-      end
-
-      private
-
-      def self.is_one_model?(resource)
-        resource.respond_to?(:id)
-      end
-
-      def self.is_scope?(resource)
-        resource.respond_to?(:ancestors) &&
-            resource.ancestors.include?(ActiveRecord::Base)
-      end
-
-      def self.is_array?(resource)
-        resource.is_a?(Array)
       end
     end
   end

@@ -24,6 +24,10 @@ module Diffit::Adapters
         def column_names
           object.class.column_names
         end
+
+        def self.applicable?(resource)
+          resource.respond_to?(:id)
+        end
       end
     end
   end
