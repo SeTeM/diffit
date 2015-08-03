@@ -1,21 +1,15 @@
 module Diffit
   module Config
-    module ClassMethods
-      attr_accessor :table_name, :serializer, :timestamp_format
+    attr_accessor :table_name, :serializer, :timestamp_format
 
-      def setup
-        yield self
-      end
-
-      def serializer_class
-        "Diffit::Serializers::#{serializer.to_s.classify}".constantize
-      end
+    def setup
+      yield self
     end
 
-    def self.included(base)
-      base.extend ClassMethods
+    def serializer_class
+      "Diffit::Serializers::#{serializer.to_s.classify}".constantize
     end
   end
 
-  include Config
+  extend Config
 end

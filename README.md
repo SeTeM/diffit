@@ -88,6 +88,6 @@ User.first.diff_from(1.day.ago)
 
 ```
 bundle
-rake copy_db_config # создаст конфиг для БД в spec/internal/config/database.yml
+rake db:migrate
 rake
 ```

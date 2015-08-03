@@ -32,7 +32,7 @@ class Create<%= table_name.camelcase %> < ActiveRecord::Migration
           valuesHsore := ''::HSTORE;
 
           FOR ri IN
-              SELECT ordinal_position, column_name, data_type
+              SELECT column_name
               FROM information_schema.columns
               WHERE
                   table_schema = quote_ident(TG_TABLE_SCHEMA)
@@ -68,9 +68,9 @@ class Create<%= table_name.camelcase %> < ActiveRecord::Migration
           END LOOP;
 
           IF (TG_OP = 'DELETE') THEN
-            RETURN OLD;
+              RETURN OLD;
           ELSE
-            RETURN NEW;
+              RETURN NEW;
           END IF;
       END;
 

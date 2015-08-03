@@ -2,19 +2,13 @@ module Diffit::Adapters
   module ActiveRecordAdapter
     module Extension
       def diffit!
-        extend ClassMethods
-        include InstanceMethods
+        extend DiffFromMethod
+        include DiffFromMethod
       end
 
       private
 
-      module ClassMethods
-        def diff_from(timestamp)
-          Diffit.diff_from(timestamp, resources: [self])
-        end
-      end
-
-      module InstanceMethods
+      module DiffFromMethod
         def diff_from(timestamp)
           Diffit.diff_from(timestamp, resources: [self])
         end

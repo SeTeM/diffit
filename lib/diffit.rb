@@ -8,6 +8,4 @@ module Diffit
   require 'diffit/serializers/json'
 
   require 'diffit/adapters/active_record_adapter' if defined?(ActiveRecord)
-
-  require 'diffit/railtie' if defined?(Rails)
 end

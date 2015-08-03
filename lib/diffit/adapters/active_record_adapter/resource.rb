@@ -8,16 +8,30 @@ module Diffit::Adapters
       UnexpectedResource = Class.new(StandardError)
 
       def self.load(resource)
-        if resource.respond_to?(:id)
+        if is_one_model?(resource)
           OneModel.new(resource)
-        elsif resource.respond_to?(:ancestors) &&
-            resource.ancestors.include?(ActiveRecord::Base)
+        elsif is_scope?(resource)
           Scope.new(resource)
-        elsif resource.is_a?(Array)
+        elsif is_array?(resource)
           resource.map { |r| OneModel.new(r) }
         else
           raise UnexpectedResource, resource
         end
+      end
+
+      private
+
+      def self.is_one_model?(resource)
+        resource.respond_to?(:id)
+      end
+
+      def self.is_scope?(resource)
+        resource.respond_to?(:ancestors) &&
+            resource.ancestors.include?(ActiveRecord::Base)
+      end
+
+      def self.is_array?(resource)
+        resource.is_a?(Array)
       end
     end
   end
